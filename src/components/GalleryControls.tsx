@@ -11,9 +11,11 @@ interface GalleryControlsProps {
   onSelectAll: () => void;
   onClearSelection: () => void;
   onDownloadSelected: () => void;
+  onDownloadAsZip: () => void;
   disableSelectAll: boolean;
   disableClear: boolean;
   disableDownload: boolean;
+  disableZipDownload: boolean;
   helperMessage?: string;
 }
 
@@ -87,8 +89,14 @@ const PrimaryButton = styled(ActionButton)`
   color: #ffffff;
 `;
 
+const AccentButton = styled(ActionButton)`
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+  color: #ffffff;
+`;
+
 const HelperMessage = styled.p`
-  color: var(--danger);
+  color: var(--text-muted);
   font-size: 0.92rem;
 `;
 
@@ -102,9 +110,11 @@ export const GalleryControls = ({
   onSelectAll,
   onClearSelection,
   onDownloadSelected,
+  onDownloadAsZip,
   disableSelectAll,
   disableClear,
   disableDownload,
+  disableZipDownload,
   helperMessage,
 }: GalleryControlsProps) => {
   return (
@@ -146,6 +156,9 @@ export const GalleryControls = ({
           <PrimaryButton onClick={onDownloadSelected} disabled={disableDownload}>
             Download Selected
           </PrimaryButton>
+          <AccentButton onClick={onDownloadAsZip} disabled={disableZipDownload}>
+            Download as ZIP
+          </AccentButton>
         </ButtonGroup>
       </Row>
 

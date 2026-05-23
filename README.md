@@ -35,10 +35,10 @@ npm run build
 - Sort: name A-Z, name Z-A, newest, oldest
 - Multi-select, select all, clear selection
 - Selection count + estimated total file size
-- Download selected images
+- Queued download manager with progress, retry, and cancel controls
+- Download selected images as ZIP export
 - Dynamic pet details route: `/pets/:id`
 - About page + not-found page
 - Global selection state persisted across route navigation
 - Responsive gallery: 1 column mobile, 2 tablet, 4 desktop
 - Pagination for gallery items
-

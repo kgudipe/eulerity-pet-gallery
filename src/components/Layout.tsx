@@ -1,5 +1,8 @@
+import { useEffect, useRef } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import styled from 'styled-components';
+import { DownloadManagerPanel } from './DownloadManagerPanel';
+import { useDownloadManagerContext } from '../context/DownloadManagerContext';
 import { useSelection } from '../context/SelectionContext';
 
 const Shell = styled.div`
@@ -59,6 +62,49 @@ const SelectionBadge = styled.div`
   font-size: 0.9rem;
 `;
 
+const DownloadWrap = styled.div`
+  position: relative;
+`;
+
+const DownloadButton = styled.button`
+  position: relative;
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  border: 1px solid rgba(31, 45, 36, 0.18);
+  background: var(--surface-strong);
+  color: var(--text-main);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+`;
+
+const DownloadBadge = styled.span`
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: #1d4ed8;
+  color: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0 4px;
+`;
+
+const Popover = styled.div`
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: min(430px, calc(100vw - 30px));
+  z-index: 20;
+`;
+
 const Main = styled.main`
   max-width: 1200px;
   margin: 0 auto;
@@ -67,6 +113,50 @@ const Main = styled.main`
 
 export const Layout = () => {
   const { selectedCount } = useSelection();
+  const {
+    jobs,
+    stats,
+    zipStatusMessage,
+    retryDownload,
+    cancelDownload,
+    cancelAll,
+    retryFailed,
+    clearFinished,
+    isPanelOpen,
+    togglePanel,
+    closePanel,
+  } = useDownloadManagerContext();
+  const popoverRef = useRef<HTMLDivElement>(null);
+  const activeCount = stats.queued + stats.downloading;
+
+  useEffect(() => {
+    if (!isPanelOpen) {
+      return;
+    }
+
+    const onMouseDown = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (popoverRef.current?.contains(target)) {
+        return;
+      }
+
+      closePanel();
+    };
+
+    const onEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        closePanel();
+      }
+    };
+
+    document.addEventListener('mousedown', onMouseDown);
+    document.addEventListener('keydown', onEscape);
+
+    return () => {
+      document.removeEventListener('mousedown', onMouseDown);
+      document.removeEventListener('keydown', onEscape);
+    };
+  }, [isPanelOpen, closePanel]);
 
   return (
     <Shell>
@@ -79,6 +169,42 @@ export const Layout = () => {
             </StyledNavLink>
             <StyledNavLink to="/about">About</StyledNavLink>
             <SelectionBadge>{selectedCount} selected</SelectionBadge>
+            <DownloadWrap ref={popoverRef}>
+              <DownloadButton
+                type="button"
+                aria-label="Open download manager"
+                aria-haspopup="dialog"
+                aria-expanded={isPanelOpen}
+                onClick={togglePanel}
+              >
+                <svg width="19" height="19" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path
+                    d="M12 4V14M12 14L8 10M12 14L16 10M5 18H19"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+                {activeCount > 0 ? <DownloadBadge>{activeCount > 99 ? '99+' : activeCount}</DownloadBadge> : null}
+              </DownloadButton>
+              {isPanelOpen ? (
+                <Popover role="dialog" aria-label="Download manager">
+                  <DownloadManagerPanel
+                    jobs={jobs}
+                    stats={stats}
+                    onRetryItem={retryDownload}
+                    onCancelItem={cancelDownload}
+                    onCancelAll={cancelAll}
+                    onRetryFailed={retryFailed}
+                    onClearFinished={clearFinished}
+                    statusMessage={zipStatusMessage}
+                    compact
+                    showWhenEmpty
+                  />
+                </Popover>
+              ) : null}
+            </DownloadWrap>
           </Nav>
         </HeaderInner>
       </Header>
