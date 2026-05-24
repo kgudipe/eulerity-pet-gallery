@@ -1,4 +1,4 @@
-import { defineConfig, type Plugin } from 'vite';
+import { defineConfig, type Plugin } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 import { mockPets } from './src/mocks/petsFixture';
 
@@ -46,4 +46,12 @@ const mockPetsApiPlugin = (): Plugin => {
 
 export default defineConfig({
   plugins: [react(), mockPetsApiPlugin()],
+  test: {
+    environment: 'jsdom',
+    globals: true,
+    setupFiles: './src/test/setup.ts',
+    clearMocks: true,
+    include: ['src/**/*.test.{ts,tsx}'],
+    exclude: ['tests/e2e/**'],
+  },
 });

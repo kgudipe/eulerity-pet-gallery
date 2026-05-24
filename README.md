@@ -42,3 +42,17 @@ npm run build
 - Responsive gallery: 1 column mobile, 2 tablet, 4 desktop
 - Pagination for gallery items
 
+## Testing
+
+- Unit tests (RTL + Vitest) for hook/context logic:
+  - `src/hooks/usePetsData.test.tsx`
+  - `src/context/SelectionContext.test.tsx`
+- E2E tests (Playwright) for search/sort/select/download flow:
+  - `tests/e2e/gallery-flow.spec.ts`
+
+Run tests:
+
+```bash
+npm run test:unit
+npm run test:e2e
+```
