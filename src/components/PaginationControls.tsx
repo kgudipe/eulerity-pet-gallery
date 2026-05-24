@@ -36,20 +36,20 @@ const Current = styled.span`
 
 export const PaginationControls = ({ currentPage, totalPages, onPageChange }: PaginationControlsProps) => {
   return (
-    <Wrapper>
-      <PageButton onClick={() => onPageChange(1)} disabled={currentPage === 1}>
+    <Wrapper role="navigation" aria-label="Gallery pagination">
+      <PageButton onClick={() => onPageChange(1)} disabled={currentPage === 1} aria-label="Go to first page">
         First
       </PageButton>
-      <PageButton onClick={() => onPageChange(currentPage - 1)} disabled={currentPage === 1}>
+      <PageButton onClick={() => onPageChange(currentPage - 1)} disabled={currentPage === 1} aria-label="Go to previous page">
         Previous
       </PageButton>
-      <Current>
+      <Current role="status" aria-live="polite" aria-atomic="true">
         Page {currentPage} of {totalPages}
       </Current>
-      <PageButton onClick={() => onPageChange(currentPage + 1)} disabled={currentPage === totalPages}>
+      <PageButton onClick={() => onPageChange(currentPage + 1)} disabled={currentPage === totalPages} aria-label="Go to next page">
         Next
       </PageButton>
-      <PageButton onClick={() => onPageChange(totalPages)} disabled={currentPage === totalPages}>
+      <PageButton onClick={() => onPageChange(totalPages)} disabled={currentPage === totalPages} aria-label="Go to last page">
         Last
       </PageButton>
     </Wrapper>

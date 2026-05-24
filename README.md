@@ -37,8 +37,23 @@ npm run build
 - Selection count + estimated total file size
 - Queued download manager with progress, retry, and cancel controls
 - Download selected images as ZIP export
+- Accessibility pass: skip link, keyboard-first popover flow, visible focus states, and aria-live status messaging
 - Dynamic pet details route: `/pets/:id`
 - About page + not-found page
 - Global selection state persisted across route navigation
 - Responsive gallery: 1 column mobile, 2 tablet, 4 desktop
 - Pagination for gallery items
+
+## Extra Feature Branch (Not Merged to `main`)
+
+- Branch: `feature/accessibility-pass`
+- Extra feature: WCAG-minded accessibility pass (skip link, stronger focus states, full keyboard-friendly popover flow, better labels, `aria-live` status updates).
+- Location:
+  - `src/components/Layout.tsx`
+  - `src/components/DownloadManagerPanel.tsx`
+  - `src/components/GalleryControls.tsx`
+  - `src/components/PaginationControls.tsx`
+  - `src/components/PetCard.tsx`
+  - `src/pages/PetDetailPage.tsx`
+  - `src/styles/GlobalStyles.ts`
+- Reason not merged to `main`: this is an additional enhancement beyond the original required scope, so it is kept isolated on its own branch.

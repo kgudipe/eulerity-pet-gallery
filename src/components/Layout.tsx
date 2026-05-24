@@ -1,12 +1,31 @@
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import styled from 'styled-components';
-import { DownloadManagerPanel } from './DownloadManagerPanel';
 import { useDownloadManagerContext } from '../context/DownloadManagerContext';
 import { useSelection } from '../context/SelectionContext';
+import { DownloadManagerPanel } from './DownloadManagerPanel';
+
+const DOWNLOAD_POPOVER_ID = 'download-manager-popover';
+const DOWNLOAD_PANEL_TITLE_ID = 'download-manager-title';
 
 const Shell = styled.div`
   min-height: 100vh;
+`;
+
+const SkipLink = styled.a`
+  position: absolute;
+  left: 16px;
+  top: -52px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #0b57d0;
+  color: #ffffff;
+  font-weight: 700;
+  z-index: 100;
+
+  &:focus {
+    top: 12px;
+  }
 `;
 
 const Header = styled.header`
@@ -66,13 +85,13 @@ const DownloadWrap = styled.div`
   position: relative;
 `;
 
-const DownloadButton = styled.button`
+const DownloadButton = styled.button<{ $open: boolean }>`
   position: relative;
   width: 40px;
   height: 40px;
   border-radius: 999px;
   border: 1px solid rgba(31, 45, 36, 0.18);
-  background: var(--surface-strong);
+  background: ${({ $open }) => ($open ? '#dbeafe' : 'var(--surface-strong)')};
   color: var(--text-main);
   display: inline-flex;
   align-items: center;
@@ -126,26 +145,39 @@ export const Layout = () => {
     togglePanel,
     closePanel,
   } = useDownloadManagerContext();
+  const downloadWrapRef = useRef<HTMLDivElement>(null);
+  const downloadButtonRef = useRef<HTMLButtonElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
   const activeCount = stats.queued + stats.downloading;
+
+  const closePanelAndRestoreFocus = useCallback(() => {
+    closePanel();
+    window.requestAnimationFrame(() => {
+      downloadButtonRef.current?.focus();
+    });
+  }, [closePanel]);
 
   useEffect(() => {
     if (!isPanelOpen) {
       return;
     }
 
+    window.requestAnimationFrame(() => {
+      popoverRef.current?.focus();
+    });
+
     const onMouseDown = (event: MouseEvent) => {
       const target = event.target as Node;
-      if (popoverRef.current?.contains(target)) {
+      if (downloadWrapRef.current?.contains(target)) {
         return;
       }
 
-      closePanel();
+      closePanelAndRestoreFocus();
     };
 
     const onEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        closePanel();
+        closePanelAndRestoreFocus();
       }
     };
 
@@ -156,25 +188,35 @@ export const Layout = () => {
       document.removeEventListener('mousedown', onMouseDown);
       document.removeEventListener('keydown', onEscape);
     };
-  }, [isPanelOpen, closePanel]);
+  }, [isPanelOpen, closePanelAndRestoreFocus]);
 
   return (
     <Shell>
+      <SkipLink href="#main-content">Skip to main content</SkipLink>
       <Header>
         <HeaderInner>
           <Brand to="/">Pet Atlas</Brand>
-          <Nav>
+          <Nav aria-label="Primary navigation">
             <StyledNavLink to="/" end>
               Gallery
             </StyledNavLink>
             <StyledNavLink to="/about">About</StyledNavLink>
-            <SelectionBadge>{selectedCount} selected</SelectionBadge>
-            <DownloadWrap ref={popoverRef}>
+            <SelectionBadge role="status" aria-live="polite">
+              {selectedCount} selected
+            </SelectionBadge>
+            <DownloadWrap ref={downloadWrapRef}>
               <DownloadButton
+                ref={downloadButtonRef}
                 type="button"
-                aria-label="Open download manager"
+                $open={isPanelOpen}
+                aria-label={
+                  activeCount > 0
+                    ? `Open download manager, ${activeCount} active download${activeCount === 1 ? '' : 's'}`
+                    : 'Open download manager'
+                }
                 aria-haspopup="dialog"
                 aria-expanded={isPanelOpen}
+                aria-controls={DOWNLOAD_POPOVER_ID}
                 onClick={togglePanel}
               >
                 <svg width="19" height="19" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -186,10 +228,19 @@ export const Layout = () => {
                     strokeLinejoin="round"
                   />
                 </svg>
-                {activeCount > 0 ? <DownloadBadge>{activeCount > 99 ? '99+' : activeCount}</DownloadBadge> : null}
+                {activeCount > 0 ? (
+                  <DownloadBadge aria-hidden="true">{activeCount > 99 ? '99+' : activeCount}</DownloadBadge>
+                ) : null}
               </DownloadButton>
               {isPanelOpen ? (
-                <Popover role="dialog" aria-label="Download manager">
+                <Popover
+                  id={DOWNLOAD_POPOVER_ID}
+                  ref={popoverRef}
+                  role="dialog"
+                  aria-modal="false"
+                  aria-labelledby={DOWNLOAD_PANEL_TITLE_ID}
+                  tabIndex={-1}
+                >
                   <DownloadManagerPanel
                     jobs={jobs}
                     stats={stats}
@@ -198,6 +249,8 @@ export const Layout = () => {
                     onCancelAll={cancelAll}
                     onRetryFailed={retryFailed}
                     onClearFinished={clearFinished}
+                    onClose={closePanelAndRestoreFocus}
+                    headingId={DOWNLOAD_PANEL_TITLE_ID}
                     statusMessage={zipStatusMessage}
                     compact
                     showWhenEmpty
@@ -208,7 +261,7 @@ export const Layout = () => {
           </Nav>
         </HeaderInner>
       </Header>
-      <Main>
+      <Main id="main-content" tabIndex={-1}>
         <Outlet />
       </Main>
     </Shell>

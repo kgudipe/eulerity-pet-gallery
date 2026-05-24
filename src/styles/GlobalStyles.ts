@@ -13,7 +13,8 @@ export const GlobalStyles = createGlobalStyle`
     --brand: #0f766e;
     --brand-strong: #0d5f58;
     --danger: #b42318;
-    --ring: rgba(15, 118, 110, 0.25);
+    --ring: #0b57d0;
+    --ring-offset: #ffffff;
     --shadow: 0 10px 30px rgba(15, 38, 28, 0.08);
   }
 
@@ -65,6 +66,19 @@ export const GlobalStyles = createGlobalStyle`
   input:focus-visible,
   select:focus-visible {
     outline: 3px solid var(--ring);
-    outline-offset: 1px;
+    outline-offset: 2px;
+    box-shadow: 0 0 0 2px var(--ring-offset);
+  }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
   }
 `;

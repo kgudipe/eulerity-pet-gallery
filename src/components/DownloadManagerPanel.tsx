@@ -10,6 +10,8 @@ interface DownloadManagerPanelProps {
   onCancelAll: () => void;
   onRetryFailed: () => void;
   onClearFinished: () => void;
+  onClose?: () => void;
+  headingId?: string;
   statusMessage?: string;
   compact?: boolean;
   showWhenEmpty?: boolean;
@@ -31,6 +33,29 @@ const TopRow = styled.div`
   justify-content: space-between;
   gap: 10px;
   flex-wrap: wrap;
+`;
+
+const TopInfo = styled.div`
+  display: grid;
+  gap: 4px;
+`;
+
+const TopActions = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+`;
+
+const CloseButton = styled.button`
+  border: 1px solid rgba(31, 45, 36, 0.2);
+  background: var(--surface-strong);
+  border-radius: 8px;
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
 `;
 
 const Title = styled.h2<{ $compact: boolean }>`
@@ -198,6 +223,8 @@ export const DownloadManagerPanel = ({
   onCancelAll,
   onRetryFailed,
   onClearFinished,
+  onClose,
+  headingId,
   statusMessage,
   compact = false,
   showWhenEmpty = false,
@@ -207,30 +234,73 @@ export const DownloadManagerPanel = ({
   }
 
   return (
-    <Panel $compact={compact}>
+    <Panel $compact={compact} aria-busy={stats.downloading > 0}>
+      <p className="sr-only" role="status" aria-live="polite" aria-atomic="true">
+        {stats.downloading} active downloads, {stats.queued} queued, {stats.failed} failed.
+      </p>
+
       <TopRow>
-        <Title $compact={compact}>Downloads</Title>
-        <StatsRow>
-          <span>{stats.downloading} active</span>
-          <span>{stats.queued} queued</span>
-          <span>{stats.failed} failed</span>
-        </StatsRow>
+        <TopInfo>
+          <Title id={headingId} $compact={compact}>
+            Downloads
+          </Title>
+          <StatsRow>
+            <span>{stats.downloading} active</span>
+            <span>{stats.queued} queued</span>
+            <span>{stats.failed} failed</span>
+          </StatsRow>
+        </TopInfo>
+
+        <TopActions>
+          {onClose ? (
+            <CloseButton type="button" onClick={onClose} aria-label="Close download manager">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M6 6L18 18M18 6L6 18" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
+              </svg>
+            </CloseButton>
+          ) : null}
+        </TopActions>
       </TopRow>
 
-      <ProgressTrack>
+      <ProgressTrack
+        role="progressbar"
+        aria-label="Overall download progress"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={Math.round(stats.overallProgress)}
+      >
         <ProgressFill $percent={stats.overallProgress} />
       </ProgressTrack>
 
-      {statusMessage ? <StatusMessage>{statusMessage}</StatusMessage> : null}
+      {statusMessage ? (
+        <StatusMessage role="status" aria-live="polite" aria-atomic="true">
+          {statusMessage}
+        </StatusMessage>
+      ) : null}
 
       <Actions>
-        <ActionButton onClick={onCancelAll} disabled={stats.queued + stats.downloading === 0}>
+        <ActionButton
+          type="button"
+          onClick={onCancelAll}
+          disabled={stats.queued + stats.downloading === 0}
+          aria-label={`Cancel all active downloads (${stats.queued + stats.downloading} items)`}
+        >
           Cancel All
         </ActionButton>
-        <ActionButton onClick={onRetryFailed} disabled={stats.failed === 0}>
+        <ActionButton
+          type="button"
+          onClick={onRetryFailed}
+          disabled={stats.failed === 0}
+          aria-label={`Retry all failed downloads (${stats.failed} items)`}
+        >
           Retry Failed
         </ActionButton>
-        <ActionButton onClick={onClearFinished} disabled={stats.completed + stats.failed + stats.canceled === 0}>
+        <ActionButton
+          type="button"
+          onClick={onClearFinished}
+          disabled={stats.completed + stats.failed + stats.canceled === 0}
+          aria-label="Clear completed, failed, and canceled downloads"
+        >
           Clear Done
         </ActionButton>
       </Actions>
@@ -238,7 +308,7 @@ export const DownloadManagerPanel = ({
       {jobs.length === 0 ? (
         <EmptyState>No downloads yet. Queue files from the gallery to get started.</EmptyState>
       ) : (
-        <JobList $compact={compact}>
+        <JobList $compact={compact} role="list" aria-label="Download queue items">
           {jobs.map((job) => {
             const progressLabel = job.bytesTotal
               ? `${formatBytes(job.bytesLoaded)} / ${formatBytes(job.bytesTotal)}`
@@ -247,13 +317,19 @@ export const DownloadManagerPanel = ({
                 : 'Waiting for file size';
 
             return (
-              <JobCard key={job.petId}>
+              <JobCard key={job.petId} role="listitem">
                 <JobTop>
                   <JobName>{job.title}</JobName>
                   <StatusBadge $status={job.status}>{statusLabel[job.status]}</StatusBadge>
                 </JobTop>
 
-                <ProgressTrack>
+                <ProgressTrack
+                  role="progressbar"
+                  aria-label={`${job.title} download progress`}
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-valuenow={Math.round(job.progress)}
+                >
                   <ProgressFill $percent={job.progress} />
                 </ProgressTrack>
 
@@ -261,15 +337,31 @@ export const DownloadManagerPanel = ({
                   {Math.round(job.progress)}% • {progressLabel} • Attempt {job.attempts}
                 </JobMeta>
 
-                {job.error ? <JobMeta>{job.error}</JobMeta> : null}
+                {job.error ? (
+                  <JobMeta role="status" aria-live="polite" aria-atomic="true">
+                    {job.error}
+                  </JobMeta>
+                ) : null}
 
                 <JobActions>
                   {job.status === 'downloading' || job.status === 'queued' ? (
-                    <SmallButton onClick={() => onCancelItem(job.petId)}>Cancel</SmallButton>
+                    <SmallButton
+                      type="button"
+                      onClick={() => onCancelItem(job.petId)}
+                      aria-label={`Cancel download for ${job.title}`}
+                    >
+                      Cancel
+                    </SmallButton>
                   ) : null}
 
                   {job.status === 'failed' || job.status === 'canceled' ? (
-                    <SmallButton onClick={() => onRetryItem(job.petId)}>Retry</SmallButton>
+                    <SmallButton
+                      type="button"
+                      onClick={() => onRetryItem(job.petId)}
+                      aria-label={`Retry download for ${job.title}`}
+                    >
+                      Retry
+                    </SmallButton>
                   ) : null}
                 </JobActions>
               </JobCard>
