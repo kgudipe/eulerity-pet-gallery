@@ -11,9 +11,11 @@ interface GalleryControlsProps {
   onSelectAll: () => void;
   onClearSelection: () => void;
   onDownloadSelected: () => void;
+  onDownloadAsZip: () => void;
   disableSelectAll: boolean;
   disableClear: boolean;
   disableDownload: boolean;
+  disableZipDownload: boolean;
   helperMessage?: string;
 }
 
@@ -87,8 +89,14 @@ const PrimaryButton = styled(ActionButton)`
   color: #ffffff;
 `;
 
+const AccentButton = styled(ActionButton)`
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+  color: #ffffff;
+`;
+
 const HelperMessage = styled.p`
-  color: var(--danger);
+  color: var(--text-muted);
   font-size: 0.92rem;
 `;
 
@@ -102,22 +110,28 @@ export const GalleryControls = ({
   onSelectAll,
   onClearSelection,
   onDownloadSelected,
+  onDownloadAsZip,
   disableSelectAll,
   disableClear,
   disableDownload,
+  disableZipDownload,
   helperMessage,
 }: GalleryControlsProps) => {
   return (
-    <Wrapper>
+    <Wrapper aria-labelledby="gallery-heading">
       <Row>
-        <Heading>Pet Gallery</Heading>
-        <Stats>
+        <Heading id="gallery-heading">Pet Gallery</Heading>
+        <Stats role="status" aria-live="polite" aria-atomic="true">
           {selectedCount} selected • estimated size: {estimatedSizeLabel}
         </Stats>
       </Row>
 
       <Row>
+        <label htmlFor="search-pets" className="sr-only">
+          Search pets by title or description
+        </label>
         <Input
+          id="search-pets"
           type="search"
           value={searchQuery}
           onChange={(event) => onSearchChange(event.target.value)}
@@ -125,7 +139,11 @@ export const GalleryControls = ({
           aria-label="Search pets"
         />
 
+        <label htmlFor="sort-pets" className="sr-only">
+          Sort pet gallery
+        </label>
         <Select
+          id="sort-pets"
           value={sortOption}
           onChange={(event) => onSortChange(event.target.value as SortOption)}
           aria-label="Sort pets"
@@ -137,19 +155,34 @@ export const GalleryControls = ({
         </Select>
 
         <ButtonGroup>
-          <ActionButton onClick={onSelectAll} disabled={disableSelectAll}>
+          <ActionButton onClick={onSelectAll} disabled={disableSelectAll} aria-label="Select all visible pets">
             Select All
           </ActionButton>
-          <ActionButton onClick={onClearSelection} disabled={disableClear}>
+          <ActionButton onClick={onClearSelection} disabled={disableClear} aria-label="Clear selected pets">
             Clear Selection
           </ActionButton>
-          <PrimaryButton onClick={onDownloadSelected} disabled={disableDownload}>
+          <PrimaryButton
+            onClick={onDownloadSelected}
+            disabled={disableDownload}
+            aria-label="Queue selected images for download"
+          >
             Download Selected
           </PrimaryButton>
+          <AccentButton
+            onClick={onDownloadAsZip}
+            disabled={disableZipDownload}
+            aria-label="Download selected images as a ZIP file"
+          >
+            Download as ZIP
+          </AccentButton>
         </ButtonGroup>
       </Row>
 
-      {helperMessage ? <HelperMessage>{helperMessage}</HelperMessage> : null}
+      {helperMessage ? (
+        <HelperMessage role="status" aria-live="polite" aria-atomic="true">
+          {helperMessage}
+        </HelperMessage>
+      ) : null}
     </Wrapper>
   );
 };

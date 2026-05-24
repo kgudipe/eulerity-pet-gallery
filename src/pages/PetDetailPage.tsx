@@ -158,10 +158,14 @@ export const PetDetailPage = () => {
           <Meta>Created: {formatDate(pet.createdAt)}</Meta>
           <Description>{pet.description}</Description>
           <Controls>
-            <Button onClick={() => toggleSelection(pet.id)}>
+            <Button
+              onClick={() => toggleSelection(pet.id)}
+              aria-label={`${selected ? 'Remove' : 'Add'} ${pet.title} ${selected ? 'from' : 'to'} selection`}
+            >
               {selected ? 'Remove from Selection' : 'Add to Selection'}
             </Button>
             <PrimaryButton
+              aria-label={`Download image for ${pet.title}`}
               onClick={() => {
                 void downloadImage(pet.imageUrl, fileNameFromPet(pet.title, pet.id, pet.imageUrl));
               }}

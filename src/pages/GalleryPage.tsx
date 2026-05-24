@@ -3,10 +3,11 @@ import styled from 'styled-components';
 import { GalleryControls } from '../components/GalleryControls';
 import { PaginationControls } from '../components/PaginationControls';
 import { PetCard } from '../components/PetCard';
+import { useDownloadManagerContext } from '../context/DownloadManagerContext';
 import { usePets } from '../context/PetsContext';
 import { useSelection } from '../context/SelectionContext';
 import type { SortOption } from '../types';
-import { fileNameFromPet, formatBytes } from '../utils/format';
+import { formatBytes } from '../utils/format';
 
 const PAGE_SIZE = 12;
 
@@ -55,25 +56,6 @@ const getDateValue = (dateString: string): number => {
   return Number.isNaN(date.getTime()) ? 0 : date.getTime();
 };
 
-const downloadImage = async (imageUrl: string, fileName: string): Promise<void> => {
-  const response = await fetch(imageUrl);
-  if (!response.ok) {
-    throw new Error(`Failed to fetch image (${response.status})`);
-  }
-
-  const blob = await response.blob();
-  const objectUrl = URL.createObjectURL(blob);
-
-  const anchor = document.createElement('a');
-  anchor.href = objectUrl;
-  anchor.download = fileName;
-  document.body.appendChild(anchor);
-  anchor.click();
-  anchor.remove();
-
-  URL.revokeObjectURL(objectUrl);
-};
-
 export const GalleryPage = () => {
   const { pets, petsById, status, error, refetch } = usePets();
   const {
@@ -90,8 +72,14 @@ export const GalleryPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortOption, setSortOption] = useState<SortOption>('date-newest');
   const [currentPage, setCurrentPage] = useState(1);
-  const [helperMessage, setHelperMessage] = useState('');
-  const [isDownloading, setIsDownloading] = useState(false);
+  const [actionMessage, setActionMessage] = useState('');
+  const {
+    isZipRunning,
+    zipStatusMessage,
+    enqueueDownloads,
+    downloadAsZip,
+    openPanel,
+  } = useDownloadManagerContext();
 
   const filteredPets = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLowerCase();
@@ -157,38 +145,25 @@ export const GalleryPage = () => {
     selectAll(sortedPets.map((pet) => pet.id));
   };
 
-  const handleDownloadSelected = async () => {
-    const selectedPets = selectedIds
+  const selectedPets = useMemo(() => {
+    return selectedIds
       .map((id) => petsById[id])
       .filter((pet): pet is NonNullable<typeof pet> => Boolean(pet));
+  }, [selectedIds, petsById]);
 
+  const handleDownloadSelected = () => {
     if (selectedPets.length === 0) {
       return;
     }
 
-    setHelperMessage('Preparing downloads...');
-    setIsDownloading(true);
+    enqueueDownloads(selectedPets);
+    openPanel();
+    setActionMessage(`Queued ${selectedPets.length} selected image(s) for download.`);
+  };
 
-    let completed = 0;
-    let failed = 0;
-
-    for (const pet of selectedPets) {
-      try {
-        await downloadImage(pet.imageUrl, fileNameFromPet(pet.title, pet.id, pet.imageUrl));
-        completed += 1;
-      } catch {
-        failed += 1;
-      }
-    }
-
-    setIsDownloading(false);
-
-    if (failed > 0) {
-      setHelperMessage(`Downloaded ${completed} image(s). ${failed} failed due to network or CORS constraints.`);
-      return;
-    }
-
-    setHelperMessage(`Downloaded ${completed} image(s).`);
+  const handleDownloadAsZip = () => {
+    openPanel();
+    void downloadAsZip(selectedPets);
   };
 
   if (status === 'loading') {
@@ -232,10 +207,12 @@ export const GalleryPage = () => {
         onSelectAll={handleSelectAll}
         onClearSelection={clearSelection}
         onDownloadSelected={handleDownloadSelected}
+        onDownloadAsZip={handleDownloadAsZip}
         disableSelectAll={sortedPets.length === 0}
         disableClear={selectedCount === 0}
-        disableDownload={selectedCount === 0 || isDownloading}
-        helperMessage={helperMessage}
+        disableDownload={selectedCount === 0}
+        disableZipDownload={selectedCount === 0 || isZipRunning}
+        helperMessage={zipStatusMessage || actionMessage}
       />
 
       {currentPagePets.length === 0 ? (

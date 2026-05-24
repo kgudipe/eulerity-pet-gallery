@@ -106,10 +106,17 @@ export const PetCard = ({ pet, selected, onToggle }: PetCardProps) => {
         <Description>{pet.description}</Description>
         <CardFooter>
           <CheckboxLabel>
-            <input type="checkbox" checked={selected} onChange={() => onToggle(pet.id)} />
+            <input
+              type="checkbox"
+              checked={selected}
+              onChange={() => onToggle(pet.id)}
+              aria-label={`Select ${pet.title}`}
+            />
             Select
           </CheckboxLabel>
-          <DetailLink to={`/pets/${encodeURIComponent(pet.id)}`}>Open</DetailLink>
+          <DetailLink to={`/pets/${encodeURIComponent(pet.id)}`} aria-label={`Open details for ${pet.title}`}>
+            Open
+          </DetailLink>
         </CardFooter>
       </Content>
     </Card>
